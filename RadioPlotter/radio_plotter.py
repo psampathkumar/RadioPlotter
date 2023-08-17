@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 """
 Plot radio pulses and fluence maps.
 """
