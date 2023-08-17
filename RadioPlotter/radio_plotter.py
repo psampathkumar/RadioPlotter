@@ -19,6 +19,15 @@ plt.rc("legend", fontsize=fnt_size)
 def plot_pulses(pulses):
     """
     Plot pulses from efield.
+
+    Parameters
+    ---------
+    pulses: np.array
+        Traces of the E-field
+
+    Returns
+    -------
+    None
     """
 
     timec7 = pulses[:, -4]
