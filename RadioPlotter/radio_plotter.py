@@ -41,7 +41,7 @@ def plot_pulses(pulses):
     fig.supxlabel("Time [s]")
     [i.grid(which="both", linestyle="dashed") for i in ax]
     plt.tight_layout()
-    plt.savefig("pulse.pdf", format='pdf')
+    plt.savefig("pulse.pdf", format="pdf")
     plt.show()
 
 
