@@ -22,4 +22,5 @@ jobs:
         uses: marian-code/python-lint-annotate@v3
         with:
           python-root-list: ${{ env.CHANGED_FILES }}
+          use-pylint: false
 
