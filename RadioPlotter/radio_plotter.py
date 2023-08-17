@@ -187,7 +187,5 @@ def plot_fluence_maps(
     positions = np.array(positions)
     energy_fluences = np.array(energy_fluences)
 
-    print(len(positions), len(energy_fluences))
     assert len(positions) == len(energy_fluences)
-    print(len(positions))
     plot_interpolated_footprint(positions, energy_fluences, interp)
