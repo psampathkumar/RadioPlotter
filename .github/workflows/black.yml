@@ -10,3 +10,4 @@ jobs:
       - uses: psf/black@stable
         with:
           jupyter: true
+          version: "22.6.0"
