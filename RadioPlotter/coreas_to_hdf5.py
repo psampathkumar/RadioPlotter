@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import division
-import os
-import numpy as np
-import configparser
-import sys
-import io
-import re
+
 import argparse
-import h5py
+import configparser
+import io
 import math
+import os
+import re
+import sys
+
+import h5py
+import numpy as np
 from scipy import integrate
 
 conversion_factor_integrated_signal = (
@@ -1089,8 +1091,8 @@ if __name__ == "__main__":
     f_h5 = write_coreas_hdf5_file(reas_filename, output_filename)
 
     try:
-        from radiotools import helper as rdhelp
         from radiotools import coordinatesystems
+        from radiotools import helper as rdhelp
     except ModuleNotFoundError as e:
         sys.exit(
             "Could not find the radiotools module: '{}'\n"
@@ -1099,8 +1101,8 @@ if __name__ == "__main__":
                 e
             )
         )
-    from scipy.signal import hilbert
     from scipy import optimize
+    from scipy.signal import hilbert
 
     output_filename_array = os.path.splitext(os.path.basename(output_filename))
 
