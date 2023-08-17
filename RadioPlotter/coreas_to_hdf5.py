@@ -19,8 +19,8 @@ conversion_factor_integrated_signal = (
 )  # to convert V**2/m**2 * s -> J/m**2 -> eV/m**2
 conversion_fieldstrength_cgs_to_SI = 2.99792458e4
 
-VERSION_MAJOR = 0
-VERSION_MINOR = 4
+VERSION_MAJOR=0
+VERSION_MINOR=4
 
 RADIO_DATA_PATH = "/home/pranav/work-stuff-unsynced/radio_data"
 
