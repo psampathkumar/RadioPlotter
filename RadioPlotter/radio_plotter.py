@@ -2,8 +2,8 @@
 """
 Plot radio pulses and fluence maps.
 """
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy.interpolate as intp
 from radiotools.analyses import energy_fluence
 
