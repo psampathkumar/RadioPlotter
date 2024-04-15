@@ -111,7 +111,6 @@ class UpdatePlots:
         data,
         scalar_key=None,
         data_key=None,
-        hack=True,
     ):
         if scalar_key is None:
             self._key = get_default_key(scalar_fns)
@@ -128,7 +127,6 @@ class UpdatePlots:
         else:
             self._dkey = data_key
         self.pulses, self.pos, self.meta = get_attributes(self.data, self._dkey)
-        self.hack = hack
 
     @property
     def dkey(self):
@@ -157,7 +155,7 @@ class UpdatePlots:
         y_pos = self.pos[:, 1]
         print(self._key)
         scalar = self.scalar_fns[self._key](self.pulses, self.pos, self.meta)
-        if self.hack:
+        if self.data[self.dkey]["hack"]:
             for index in range(len(scalar)):
                 if index % 8 == 0:
                     scalar[index] = (scalar[index + 4] + scalar[index + 5]) / 2
@@ -297,7 +295,6 @@ class UpdatePlots:
 def view(
     data,
     scalar_fns,
-    hack=True,
 ):
     # get attributes from first key
     pulses, pos, meta = get_attributes(data, list(data.keys())[0])
@@ -332,7 +329,7 @@ def view(
     print(pos.shape)
 
     # Plot the first key by default and setup pulse picker
-    defaultevent = UpdatePlots(fig, ax, scalar_fns, data, hack=hack)
+    defaultevent = UpdatePlots(fig, ax, scalar_fns, data)
     defaultevent.update_plots()
     fig.canvas.mpl_connect("pick_event", defaultevent.onpick)
 
