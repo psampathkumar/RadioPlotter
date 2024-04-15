@@ -29,9 +29,9 @@ class UpdatePlots:
         hack=True,
     ):
         if scalar_key is None:
-            self.key = get_default_key(scalar_fns)
+            self._key = get_default_key(scalar_fns)
         else:
-            self.key = scalar_key
+            self._key = scalar_key
         self.antenna_plt = None
         self.data = data
         self.scalar_fns = scalar_fns
@@ -39,17 +39,38 @@ class UpdatePlots:
         self.ax = ax
 
         if data_key is None:
-            self.dkey = get_default_key(data)
+            self._dkey = get_default_key(data)
         else:
-            self.dkey = scalar_key
-        self.pulses, self.pos, self.meta = get_attributes(self.data, self.dkey)
+            self._dkey = data_key
+        self.pulses, self.pos, self.meta = get_attributes(self.data, self._dkey)
         self.hack = hack
+
+    @property
+    def dkey(self):
+        """key to the data dictionary."""
+        return self._dkey
+
+    @dkey.setter
+    def dkey(self, key):
+        assert key in self.data
+        self._dkey = key
+        self.pulses, self.pos, self.meta = get_attributes(self.data, self._dkey)
+
+    @property
+    def key(self):
+        """key to the scalar function dictionary."""
+        return self._key
+
+    @key.setter
+    def key(self, key):
+        assert key in self.scalar_fns
+        self._key = key
 
     def update_plots(self, event=None):
         self.ax["A"].clear()
         x_pos = self.pos[:, 0]
         y_pos = self.pos[:, 1]
-        scalar = self.scalar_fns[self.key](self.pulses, self.pos, self.meta)
+        scalar = self.scalar_fns[self._key](self.pulses, self.pos, self.meta)
         print(scalar.shape)
         if self.hack:
             for index in range(len(scalar)):
@@ -81,7 +102,7 @@ class UpdatePlots:
             shading="gouraud",
         )  # use shading="gouraud" to make it smoother
         cbi = self.fig.colorbar(pcm, pad=0.2, cax=self.ax["B"], aspect=10)
-        cbi.set_label(self.key, fontsize=20)
+        cbi.set_label(self._key, fontsize=20)
         self.ax["A"].set_ylabel("y / m")
         self.ax["A"].set_xlabel("x / m")
         self.ax["A"].set_facecolor("black")
@@ -224,11 +245,19 @@ def view(
     # Buttons for the scalar plots
     axscalar = []
     buttonscalar = []
+    axdata = []
+    buttondata = []
     for i, key in enumerate(scalar_fns):
         axscalar.append(fig.add_axes([0.06 * (i + 1), 0.97, 0.05, 0.025]))
         buttonscalar.append(Button(axscalar[i], key))
-        upplt = UpdatePlots(fig, ax, scalar_fns, data, scalar_key=key, hack=hack)
+        upplt = UpdatePlots(fig, ax, scalar_fns, data, scalar_key=key)
         buttonscalar[i].on_clicked(upplt.update_plots)
+        fig.canvas.mpl_connect("pick_event", upplt.onpick)
+    for j, dkey in enumerate(data.keys()):
+        axdata.append(fig.add_axes([0.06 * (j + 1), 0.07, 0.05, 0.025]))
+        buttondata.append(Button(axdata[j], dkey))
+        upplt = UpdatePlots(fig, ax, scalar_fns, data, data_key=dkey)
+        buttondata[j].on_clicked(upplt.update_plots)
         fig.canvas.mpl_connect("pick_event", upplt.onpick)
 
     axclear = fig.add_axes([0.45, 0.01, 0.05, 0.025])
