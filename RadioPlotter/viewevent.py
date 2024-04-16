@@ -66,7 +66,9 @@ class MyRadioButtons(RadioButtons):
             )
             circles.append(p)
         if orientation == "horizontal":
-            kwargs.update(ncol=len(labels), mode="expand")
+            kwargs.update(
+                ncol=np.where(len(labels) > 6, 6, len(labels)), mode="expand"
+            )
         kwargs.setdefault("frameon", False)
         self.box = ax.legend(circles, labels, loc="center", **kwargs)
         self.labels = self.box.texts
@@ -378,7 +380,15 @@ def view(
     """
     print(meta.shape)
     print(scalar_fns.keys())
-    axradio = fig.add_axes([0.06, 0.97, 0.07 * len(scalar_fns.keys()), 0.025])
+    axradio = fig.add_axes(
+        [
+            0.03,
+            0.95,
+            0.07
+            * np.where(len(scalar_fns.keys()) > 6, 6, len(scalar_fns.keys())),
+            0.025 * (len(scalar_fns.keys()) // 6 + 1),
+        ]
+    )
     radio = MyRadioButtons(
         axradio,
         scalar_fns.keys(),
