@@ -266,13 +266,23 @@ class UpdatePlots:
     def box_plots(self, event):
         self.ax["C"].clear()
         self.ax["D"].clear()
-        self.ax["C"].boxplot(self.pulses[:, :, 0], showfliers=False, meanline=True)
+        if self.data[self.dkey]["hack"]:
+            indices = np.logical_not(np.arange(len(self.pulses)) % 8 == 0)
+        else:
+            indices = np.arange(len(self.pulses))
+        self.ax["C"].boxplot(
+            self.pulses[indices, :, 0], showfliers=False, meanline=True
+        )
         self.ax["C"].set_xticks([])
-        self.ax["D"].boxplot(self.pulses[:, :, 1], showfliers=False, meanline=True)
+        self.ax["D"].boxplot(
+            self.pulses[indices, :, 1], showfliers=False, meanline=True
+        )
         self.ax["D"].set_xticks([])
         try:
             self.ax["E"].clear()
-            self.ax["E"].boxplot(self.pulses[:, :, 2], showfliers=False, meanline=True)
+            self.ax["E"].boxplot(
+                self.pulses[indices, :, 2], showfliers=False, meanline=True
+            )
             self.ax["E"].set_xticks([])
         except KeyError:
             pass
@@ -366,6 +376,7 @@ def view(
         buttonscalar[i].on_clicked(upplt.update_plots)
         fig.canvas.mpl_connect("pick_event", upplt.onpick)
     """
+    print(meta.shape)
     print(scalar_fns.keys())
     axradio = fig.add_axes([0.06, 0.97, 0.07 * len(scalar_fns.keys()), 0.025])
     radio = MyRadioButtons(
