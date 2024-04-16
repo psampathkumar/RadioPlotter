@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy.interpolate as intp
 from matplotlib import cbook
 from matplotlib.widgets import AxesWidget, Button, RadioButtons
+from scipy.interpolate import RBFInterpolator
 
 
 class MyRadioButtons(RadioButtons):
@@ -66,9 +66,7 @@ class MyRadioButtons(RadioButtons):
             )
             circles.append(p)
         if orientation == "horizontal":
-            kwargs.update(
-                ncol=np.where(len(labels) > 6, 6, len(labels)), mode="expand"
-            )
+            kwargs.update(ncol=np.where(len(labels) > 6, 6, len(labels)), mode="expand")
         kwargs.setdefault("frameon", False)
         self.box = ax.legend(circles, labels, loc="center", **kwargs)
         self.labels = self.box.texts
@@ -169,14 +167,12 @@ class UpdatePlots:
         # points within a circle
         in_star = xx**2 + yy**2 <= np.nanmax(x_pos**2 + y_pos**2)
         print(x_pos.shape, y_pos.shape, scalar.shape)
-        interp_func = intp.Rbf(
-            x_pos,
-            y_pos,
-            scalar,
-            smooth=0,
-            function="quintic",
-        )
-        fp_interp = np.where(in_star, interp_func(xx, yy), np.nan)
+        interp_func = RBFInterpolator(list(zip(x_pos, y_pos)), scalar, kernel="quintic")
+        fp_interp = np.where(
+            in_star.flatten(),
+            interp_func(np.array([xx, yy]).reshape(2, -1).T),
+            np.nan,
+        ).reshape(100, 100)
         pcm = self.ax["A"].pcolormesh(
             xx,
             yy,
@@ -384,8 +380,7 @@ def view(
         [
             0.03,
             0.95,
-            0.07
-            * np.where(len(scalar_fns.keys()) > 6, 6, len(scalar_fns.keys())),
+            0.07 * np.where(len(scalar_fns.keys()) > 6, 6, len(scalar_fns.keys())),
             0.025 * (len(scalar_fns.keys()) // 6 + 1),
         ]
     )
