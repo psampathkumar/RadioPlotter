@@ -44,6 +44,7 @@ class UpdatePlots:
         else:
             self._dkey = data_key
         self.pulses, self.pos, self.meta = get_attributes(self.data, self._dkey)
+        self.plotted_antenna = []
 
     @property
     def dkey(self):
@@ -129,40 +130,45 @@ class UpdatePlots:
             return
         else:
             dataind = event.ind[0]
+        self.plotted_antenna.append(dataind)
+        self.plot_antennas([dataind])
 
-        x_pos = self.pos[:, 0]
-        y_pos = self.pos[:, 1]
-        self.ax["A"].scatter(
-            x_pos[dataind],
-            y_pos[dataind],
-            edgecolor="r",
-            facecolor="none",
-            s=50.0,
-            lw=5.0,
-        )
-        self.ax["A"].annotate(
-            str(dataind),
-            (x_pos[dataind] + 10, y_pos[dataind] + 10),
-            color="green",
-            size="large",
-        )
-        self.fig.canvas.flush_events()
-        self.ax["C"].plot(
-            self.pulses[dataind, :, 0],
-            label=f"Index:{dataind}, xpos:{x_pos[dataind]:.2f} ypos:"
-            f" {y_pos[dataind]:.2f}",
-        )
-        self.ax["C"].legend()
-        self.fig.canvas.flush_events()
-        self.ax["D"].plot(self.pulses[dataind, :, 1])
-        self.fig.canvas.flush_events()
-        try:
-            self.ax["E"].plot(self.pulses[dataind, :, 2])
-        except IndexError:
-            pass
-        except KeyError:
-            pass
-        self.fig.canvas.draw_idle()
+    def plot_antennas(self, datainds):
+        for dataind in datainds:
+            x_pos = self.pos[:, 0]
+            y_pos = self.pos[:, 1]
+            self.ax["A"].scatter(
+                x_pos[dataind],
+                y_pos[dataind],
+                edgecolor="r",
+                facecolor="none",
+                s=50.0,
+                lw=5.0,
+            )
+            self.ax["A"].annotate(
+                str(dataind),
+                (x_pos[dataind] + 10, y_pos[dataind] + 10),
+                color="green",
+                size="large",
+            )
+            self.fig.canvas.flush_events()
+            self.ax["C"].plot(
+                self.pulses[dataind, :, 0],
+                label=f"{self.dkey}: Index:{dataind}, xpos:{x_pos[dataind]:.2f} "
+                f"ypos:"
+                f" {y_pos[dataind]:.2f}",
+            )
+            self.ax["C"].legend()
+            self.fig.canvas.flush_events()
+            self.ax["D"].plot(self.pulses[dataind, :, 1])
+            self.fig.canvas.flush_events()
+            try:
+                self.ax["E"].plot(self.pulses[dataind, :, 2])
+            except IndexError:
+                pass
+            except KeyError:
+                pass
+            self.fig.canvas.draw_idle()
         return True
 
     def update_skeys(self, skey=None):
@@ -177,10 +183,9 @@ class UpdatePlots:
             self.dkey = dkey
             self.ax["A"].clear()
             self.update_plots()
+            self.plot_antennas(self.plotted_antenna)
 
     def box_plots(self, event):
-        self.ax["C"].clear()
-        self.ax["D"].clear()
         if self.data[self.dkey]["hack"]:
             indices = np.logical_not(np.arange(len(self.pulses)) % 8 == 0)
         else:
@@ -194,7 +199,6 @@ class UpdatePlots:
         )
         self.ax["D"].set_xticks([])
         try:
-            self.ax["E"].clear()
             self.ax["E"].boxplot(
                 self.pulses[indices, :, 2], showfliers=False, meanline=True
             )
@@ -214,6 +218,7 @@ class UpdatePlots:
             self.ax["E"].clear()
         except KeyError:
             pass
+        self.plotted_antenna = []
         self.fig.canvas.draw_idle()
 
 
@@ -254,43 +259,16 @@ def view(
     print(pos.shape)
 
     # Plot the first key by default and setup pulse picker
-    defaultevent = UpdatePlots(fig, ax, scalar_fns, data)
-    defaultevent.update_plots()
-    fig.canvas.mpl_connect("pick_event", defaultevent.onpick)
+    upplt = UpdatePlots(fig, ax, scalar_fns, data)
+    upplt.update_plots()
+    fig.canvas.mpl_connect("pick_event", upplt.onpick)
 
     # Add a button to clear the pulse plots
     axclear = fig.add_axes([0.5, 0.01, 0.05, 0.025])
     bnext = Button(axclear, "Clear")
-    bnext.on_clicked(defaultevent.clear_plots)
+    bnext.on_clicked(upplt.clear_plots)
 
     # Buttons for the scalar plots
-    upplt = UpdatePlots(fig, ax, scalar_fns, data)
-    """
-    axdata = []
-    buttondata = []
-    for i, dkey in enumerate(data.keys()):
-        axdata.append(fig.add_axes([0.06 * (i + 1), 0.07, 0.05, 0.025]))
-        buttondata.append(Button(axdata[i], dkey))
-        upplt = UpdatePlots(
-            fig,
-            ax,
-            scalar_fns,
-            data,
-            data_key=dkey,
-            # scalar_key=upplt.key,  # keep the previous scalar key
-        )
-        buttondata[i].on_clicked(upplt.update_plots)
-        fig.canvas.mpl_connect("pick_event", upplt.onpick)
-
-    axscalar = []
-    buttonscalar = []
-    for i, key in enumerate(scalar_fns):
-        axscalar.append(fig.add_axes([0.06 * (i + 1), 0.97, 0.05, 0.025]))
-        buttonscalar.append(Button(axscalar[i], key))
-        upplt.key = key
-        buttonscalar[i].on_clicked(upplt.update_plots)
-        fig.canvas.mpl_connect("pick_event", upplt.onpick)
-    """
     print(meta.shape)
     print(scalar_fns.keys())
     axradio = fig.add_axes(
