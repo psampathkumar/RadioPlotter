@@ -33,18 +33,19 @@ class UpdatePlots:
             self._key = get_default_key(scalar_fns)
         else:
             self._key = scalar_key
-        self.antenna_plt = None
-        self.data = data
-        self.scalar_fns = scalar_fns
-        self.fig = fig
-        self.ax = ax
+        self._antenna_plt = None
+        self._data = data
+        self._scalar_fns = scalar_fns
+        self._fig = fig
+        self._ax = ax
 
         if data_key is None:
             self._dkey = get_default_key(data)
         else:
             self._dkey = data_key
-        self.pulses, self.pos, self.meta = get_attributes(self.data, self._dkey)
-        self.plotted_antenna = []
+        self._pulses, self._pos, self._meta = get_attributes(self._data, self._dkey)
+        self._plotted_antenna = []
+        self._plotted_dataset = []
 
     @property
     def dkey(self):
@@ -53,9 +54,9 @@ class UpdatePlots:
 
     @dkey.setter
     def dkey(self, key):
-        assert key in self.data
+        assert key in self._data
         self._dkey = key
-        self.pulses, self.pos, self.meta = get_attributes(self.data, self._dkey)
+        self._pulses, self._pos, self._meta = get_attributes(self._data, self._dkey)
 
     @property
     def key(self):
@@ -64,16 +65,16 @@ class UpdatePlots:
 
     @key.setter
     def key(self, key):
-        assert key in self.scalar_fns
+        assert key in self._scalar_fns
         self._key = key
 
     def update_plots(self, event=None):
-        self.ax["A"].clear()
-        x_pos = self.pos[:, 0]
-        y_pos = self.pos[:, 1]
+        self._ax["A"].clear()
+        x_pos = self._pos[:, 0]
+        y_pos = self._pos[:, 1]
         print(self._key)
-        scalar = self.scalar_fns[self._key](self.pulses, self.pos, self.meta)
-        if self.data[self.dkey]["hack"]:
+        scalar = self._scalar_fns[self._key](self._pulses, self._pos, self._meta)
+        if self._data[self.dkey]["hack"]:
             for index in range(len(scalar)):
                 if index % 8 == 0:
                     scalar[index] = (scalar[index + 4] + scalar[index + 5]) / 2
@@ -91,7 +92,7 @@ class UpdatePlots:
             interp_func(np.array([xx, yy]).reshape(2, -1).T),
             np.nan,
         ).reshape(100, 100)
-        pcm = self.ax["A"].pcolormesh(
+        pcm = self._ax["A"].pcolormesh(
             xx,
             yy,
             fp_interp,
@@ -100,18 +101,18 @@ class UpdatePlots:
             cmap="inferno",
             shading="gouraud",
         )  # use shading="gouraud" to make it smoother
-        cbi = self.fig.colorbar(pcm, pad=0.2, cax=self.ax["B"], aspect=10)
+        cbi = self._fig.colorbar(pcm, pad=0.2, cax=self._ax["B"], aspect=10)
         cbi.set_label(self._key, fontsize=20)
-        self.ax["A"].set_ylabel("y / m")
-        self.ax["A"].set_xlabel("x / m")
-        self.ax["A"].set_facecolor("black")
-        self.ax["A"].set_aspect(1)
-        self.ax["A"].set_xlim(np.min(x_pos), np.max(x_pos))
-        self.ax["A"].set_ylim(np.min(y_pos), np.max(y_pos))
+        self._ax["A"].set_ylabel("y / m")
+        self._ax["A"].set_xlabel("x / m")
+        self._ax["A"].set_facecolor("black")
+        self._ax["A"].set_aspect(1)
+        self._ax["A"].set_xlim(np.min(x_pos), np.max(x_pos))
+        self._ax["A"].set_ylim(np.min(y_pos), np.max(y_pos))
         print("vmin = ", np.amin(scalar))
         print("vmax = ", np.amax(scalar))
 
-        self.antenna_plt = self.ax["A"].scatter(
+        self._antenna_plt = self._ax["A"].scatter(
             x_pos,
             y_pos,
             edgecolor="w",
@@ -120,24 +121,25 @@ class UpdatePlots:
             lw=1.0,
             picker=True,
         )
-        self.fig.canvas.draw_idle()
+        self._fig.canvas.draw_idle()
 
     def onpick(self, event):
-        if event.artist != self.antenna_plt:
+        if event.artist != self._antenna_plt:
             return
         n = len(event.ind)
         if not n:
             return
         else:
             dataind = event.ind[0]
-        self.plotted_antenna.append(dataind)
         self.plot_antennas([dataind])
+        self._plotted_antenna.append(dataind)
+        self._plotted_dataset.append(self._dkey)
 
-    def plot_antennas(self, datainds):
+    def mark_antennas(self, datainds):
         for dataind in datainds:
-            x_pos = self.pos[:, 0]
-            y_pos = self.pos[:, 1]
-            self.ax["A"].scatter(
+            x_pos = self._pos[:, 0]
+            y_pos = self._pos[:, 1]
+            self._ax["A"].scatter(
                 x_pos[dataind],
                 y_pos[dataind],
                 edgecolor="r",
@@ -145,81 +147,93 @@ class UpdatePlots:
                 s=50.0,
                 lw=5.0,
             )
-            self.ax["A"].annotate(
+            self._ax["A"].annotate(
                 str(dataind),
                 (x_pos[dataind] + 10, y_pos[dataind] + 10),
                 color="green",
                 size="large",
             )
-            self.fig.canvas.flush_events()
-            self.ax["C"].plot(
-                self.pulses[dataind, :, 0],
-                label=f"{self.dkey}: Index:{dataind}, xpos:{x_pos[dataind]:.2f} "
-                f"ypos:"
-                f" {y_pos[dataind]:.2f}",
+            self._fig.canvas.flush_events()
+
+    def plot_antennas(self, datainds):
+        for i, dataind in enumerate(datainds):
+            if (dataind in self._plotted_antenna) and (
+                self._dkey in self._plotted_dataset
+            ):
+                self.mark_antennas([dataind])
+                print(f"skipped {self._dkey}:{dataind}")
+                print(self._plotted_antenna, self._plotted_dataset)
+                continue
+            self.mark_antennas([dataind])
+            self._ax["C"].plot(
+                self._pulses[dataind, :, 0],
+                label=f"{self.dkey}: Index:{dataind}",
             )
-            self.ax["C"].legend()
-            self.fig.canvas.flush_events()
-            self.ax["D"].plot(self.pulses[dataind, :, 1])
-            self.fig.canvas.flush_events()
+            self._ax["C"].legend()
+            self._fig.canvas.flush_events()
+            self._ax["D"].plot(self._pulses[dataind, :, 1])
+            self._fig.canvas.flush_events()
             try:
-                self.ax["E"].plot(self.pulses[dataind, :, 2])
+                self._ax["E"].plot(self._pulses[dataind, :, 2])
             except IndexError:
                 pass
             except KeyError:
                 pass
-            self.fig.canvas.draw_idle()
+            self._fig.canvas.draw_idle()
         return True
 
     def update_skeys(self, skey=None):
         if skey is not None:
             self.key = skey
             print(self.key)
-            self.ax["A"].clear()
+            self._ax["A"].clear()
             self.update_plots()
+            self.mark_antennas(self._plotted_antenna)
 
     def update_dkeys(self, dkey=None):
         if dkey is not None:
             self.dkey = dkey
-            self.ax["A"].clear()
+            self._ax["A"].clear()
             self.update_plots()
-            self.plot_antennas(self.plotted_antenna)
+            self.plot_antennas(self._plotted_antenna)
+            self._plotted_dataset.append(self._dkey)
 
     def box_plots(self, event):
-        if self.data[self.dkey]["hack"]:
-            indices = np.logical_not(np.arange(len(self.pulses)) % 8 == 0)
+        if self._data[self.dkey]["hack"]:
+            indices = np.logical_not(np.arange(len(self._pulses)) % 8 == 0)
         else:
-            indices = np.arange(len(self.pulses))
-        self.ax["C"].boxplot(
-            self.pulses[indices, :, 0], showfliers=False, meanline=True
+            indices = np.arange(len(self._pulses))
+        self._ax["C"].boxplot(
+            self._pulses[indices, :, 0], showfliers=False, meanline=True
         )
-        self.ax["C"].set_xticks([])
-        self.ax["D"].boxplot(
-            self.pulses[indices, :, 1], showfliers=False, meanline=True
+        self._ax["C"].set_xticks([])
+        self._ax["D"].boxplot(
+            self._pulses[indices, :, 1], showfliers=False, meanline=True
         )
-        self.ax["D"].set_xticks([])
+        self._ax["D"].set_xticks([])
         try:
-            self.ax["E"].boxplot(
-                self.pulses[indices, :, 2], showfliers=False, meanline=True
+            self._ax["E"].boxplot(
+                self._pulses[indices, :, 2], showfliers=False, meanline=True
             )
-            self.ax["E"].set_xticks([])
+            self._ax["E"].set_xticks([])
         except KeyError:
             pass
         except IndexError:
             pass
-        self.fig.canvas.draw_idle()
+        self._fig.canvas.draw_idle()
 
     def clear_plots(self, event):
-        self.ax["A"].clear()
-        self.ax["B"].clear()
-        self.ax["C"].clear()
-        self.ax["D"].clear()
+        self._ax["A"].clear()
+        self._ax["B"].clear()
+        self._ax["C"].clear()
+        self._ax["D"].clear()
         try:
-            self.ax["E"].clear()
+            self._ax["E"].clear()
         except KeyError:
             pass
-        self.plotted_antenna = []
-        self.fig.canvas.draw_idle()
+        self._plotted_antenna = []
+        self._plotted_dataset = []
+        self._fig.canvas.draw_idle()
 
 
 def view(
