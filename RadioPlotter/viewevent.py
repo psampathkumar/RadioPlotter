@@ -30,9 +30,9 @@ class UpdatePlots:
         data_key=None,
     ):
         if scalar_key is None:
-            self._key = get_default_key(scalar_fns)
+            self._skey = get_default_key(scalar_fns)
         else:
-            self._key = scalar_key
+            self._skey = scalar_key
         self._antenna_plt = None
         self._data = data
         self._scalar_fns = scalar_fns
@@ -59,22 +59,22 @@ class UpdatePlots:
         self._pulses, self._pos, self._meta = get_attributes(self._data, self._dkey)
 
     @property
-    def key(self):
+    def skey(self):
         """key to the scalar function dictionary."""
-        return self._key
+        return self._skey
 
-    @key.setter
-    def key(self, key):
+    @skey.setter
+    def skey(self, key):
         assert key in self._scalar_fns
-        self._key = key
+        self._skey = key
 
     def update_plots(self, event=None):
         self._ax["A"].clear()
         x_pos = self._pos[:, 0]
         y_pos = self._pos[:, 1]
-        print(self._key)
-        scalar = self._scalar_fns[self._key](self._pulses, self._pos, self._meta)
-        if self._data[self.dkey]["hack"]:
+        print(self._skey)
+        scalar = self._scalar_fns[self._skey](self._pulses, self._pos, self._meta)
+        if self._data[self._dkey]["hack"]:
             for index in range(len(scalar)):
                 if index % 8 == 0:
                     scalar[index] = (scalar[index + 4] + scalar[index + 5]) / 2
@@ -102,10 +102,10 @@ class UpdatePlots:
             shading="gouraud",
         )  # use shading="gouraud" to make it smoother
         cbi = self._fig.colorbar(pcm, pad=0.2, cax=self._ax["B"], aspect=10)
-        cbi.set_label(self._key, fontsize=20)
+        cbi.set_label(self._skey, fontsize=20)
         self._ax["A"].set_ylabel("y / m")
         self._ax["A"].set_xlabel("x / m")
-        self._ax["A"].set_facecolor("black")
+        self._ax["A"].set_facecolor("white")
         self._ax["A"].set_aspect(1)
         self._ax["A"].set_xlim(np.min(x_pos), np.max(x_pos))
         self._ax["A"].set_ylim(np.min(y_pos), np.max(y_pos))
@@ -167,7 +167,7 @@ class UpdatePlots:
             self.mark_antennas([dataind])
             self._ax["C"].plot(
                 self._pulses[dataind, :, 0],
-                label=f"{self.dkey}: Index:{dataind}",
+                label=f"{self._dkey}: Index:{dataind}",
             )
             self._ax["C"].legend()
             self._fig.canvas.flush_events()
@@ -184,8 +184,8 @@ class UpdatePlots:
 
     def update_skeys(self, skey=None):
         if skey is not None:
-            self.key = skey
-            print(self.key)
+            self.skey = skey
+            print(self.skey)
             self._ax["A"].clear()
             self.update_plots()
             self.mark_antennas(self._plotted_antenna)
@@ -199,7 +199,7 @@ class UpdatePlots:
             self._plotted_dataset.append(self._dkey)
 
     def box_plots(self, event):
-        if self._data[self.dkey]["hack"]:
+        if self._data[self._dkey]["hack"]:
             indices = np.logical_not(np.arange(len(self._pulses)) % 8 == 0)
         else:
             indices = np.arange(len(self._pulses))
