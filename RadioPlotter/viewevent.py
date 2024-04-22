@@ -194,6 +194,27 @@ class UpdatePlots:
             self.plot_antennas(self._plotted_antenna)
             self._plotted_dataset.append(self._dkey)
 
+    def all_pulse_plots(self, event):
+        if self._data[self._dkey]["hack"]:
+            mask = np.logical_not(
+                np.arange(len(self._pulses)) % 8 == 0
+            ) & np.logical_not(np.arange(len(self._pulses)) % 8 == 2)
+        else:
+            mask = np.arange(len(self._pulses))
+        indices = np.arange(len(self._pulses))[mask]
+        self._ax["C"].plot(self._pulses[indices, :, 0].T)
+        self._ax["C"].set_xticks([])
+        self._ax["D"].plot(self._pulses[indices, :, 1].T)
+        self._ax["D"].set_xticks([])
+        try:
+            self._ax["E"].plot(self._pulses[indices, :, 2].T)
+            self._ax["E"].set_xticks([])
+        except KeyError:
+            pass
+        except IndexError:
+            pass
+        self._fig.canvas.draw_idle()
+
     def box_plots(self, event):
         print("Box Plotting")
         showfliers = False
@@ -315,6 +336,10 @@ def view(
     axclear = fig.add_axes([0.45, 0.01, 0.05, 0.025])
     bbox = Button(axclear, "Box Plots")
     bbox.on_clicked(upplt.box_plots)
+
+    axclear = fig.add_axes([0.40, 0.01, 0.05, 0.025])
+    bbox1 = Button(axclear, "All Plots")
+    bbox1.on_clicked(upplt.all_pulse_plots)
 
     plt.tight_layout()
     plt.show()
