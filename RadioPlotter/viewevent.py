@@ -72,8 +72,8 @@ class UpdatePlots:
         self._ax["A"].clear()
         x_pos = self._pos[:, 0]
         y_pos = self._pos[:, 1]
-        print(self._skey)
         scalar = self._scalar_fns[self._skey](self._pulses, self._pos, self._meta)
+        print(scalar.shape)
         if self._data[self._dkey]["hack"]:
             for index in range(len(scalar)):
                 if index % 8 == 0:
@@ -85,7 +85,6 @@ class UpdatePlots:
         xx, yy = np.meshgrid(xs, ys)
         # points within a circle
         in_star = xx**2 + yy**2 <= np.nanmax(x_pos**2 + y_pos**2)
-        print(x_pos.shape, y_pos.shape, scalar.shape)
         interp_func = RBFInterpolator(list(zip(x_pos, y_pos)), scalar, kernel="quintic")
         fp_interp = np.where(
             in_star.flatten(),
@@ -161,8 +160,6 @@ class UpdatePlots:
                 self._dkey in self._plotted_dataset
             ):
                 self.mark_antennas([dataind])
-                print(f"skipped {self._dkey}:{dataind}")
-                print(self._plotted_antenna, self._plotted_dataset)
                 continue
             self.mark_antennas([dataind])
             self._ax["C"].plot(
@@ -185,7 +182,6 @@ class UpdatePlots:
     def update_skeys(self, skey=None):
         if skey is not None:
             self.skey = skey
-            print(self.skey)
             self._ax["A"].clear()
             self.update_plots()
             self.mark_antennas(self._plotted_antenna)
@@ -268,9 +264,6 @@ def view(
         figsize=(20, 10),
         gridspec_kw={"width_ratios": width_ratio},
     )
-    for aa in ax.keys():
-        print(ax[aa].get_subplotspec().get_geometry())
-    print(pos.shape)
 
     # Plot the first key by default and setup pulse picker
     upplt = UpdatePlots(fig, ax, scalar_fns, data)
