@@ -195,21 +195,30 @@ class UpdatePlots:
             self._plotted_dataset.append(self._dkey)
 
     def box_plots(self, event):
+        print("Box Plotting")
+        showfliers = False
         if self._data[self._dkey]["hack"]:
-            indices = np.logical_not(np.arange(len(self._pulses)) % 8 == 0)
+            print("hacked")
+            mask = np.logical_not(
+                np.arange(len(self._pulses)) % 8 == 0
+            ) & np.logical_not(np.arange(len(self._pulses)) % 8 == 2)
         else:
-            indices = np.arange(len(self._pulses))
+            mask = np.arange(len(self._pulses))
+        indices = np.arange(len(self._pulses))[mask]
+        print(indices)
         self._ax["C"].boxplot(
-            self._pulses[indices, :, 0], showfliers=False, meanline=True
+            self._pulses[indices, :, 0], showfliers=showfliers, meanline=True
         )
         self._ax["C"].set_xticks([])
         self._ax["D"].boxplot(
-            self._pulses[indices, :, 1], showfliers=False, meanline=True
+            self._pulses[indices, :, 1], showfliers=showfliers, meanline=True
         )
         self._ax["D"].set_xticks([])
         try:
             self._ax["E"].boxplot(
-                self._pulses[indices, :, 2], showfliers=False, meanline=True
+                self._pulses[indices, :, 2],
+                showfliers=showfliers,
+                meanline=True,
             )
             self._ax["E"].set_xticks([])
         except KeyError:
