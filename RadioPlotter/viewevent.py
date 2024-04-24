@@ -6,12 +6,14 @@ from scipy.interpolate import RBFInterpolator
 from RadioPlotter.utilities.customelements import MyRadioButtons
 
 
-def get_attributes(data, key):
+def get_attributes(data, key, radius=np.inf):
     """Separate pulses, position and meta data from attribute dictionary."""
     pos = data[key]["pos"]
     pulses = data[key]["real"]
     meta = data[key]["meta"]
-    return pulses, pos, meta
+
+    in_ring = pos[:, 0] ** 2 + pos[:, 1] ** 2 <= radius**2
+    return pulses[in_ring], pos[in_ring], meta[in_ring]
 
 
 def get_default_key(dictt):
@@ -43,6 +45,7 @@ class UpdatePlots:
             self._dkey = get_default_key(data)
         else:
             self._dkey = data_key
+        self._radius = np.inf
         self._pulses, self._pos, self._meta = get_attributes(self._data, self._dkey)
         self._plotted_antenna = []
         self._plotted_dataset = []
@@ -56,7 +59,9 @@ class UpdatePlots:
     def dkey(self, key):
         assert key in self._data
         self._dkey = key
-        self._pulses, self._pos, self._meta = get_attributes(self._data, self._dkey)
+        self._pulses, self._pos, self._meta = get_attributes(
+            self._data, self._dkey, radius=self._radius
+        )
 
     @property
     def skey(self):
@@ -75,7 +80,7 @@ class UpdatePlots:
         scalar = self._scalar_fns[self._skey](self._pulses, self._pos, self._meta)
         print(scalar.shape)
         if self._data[self._dkey]["hack"]:
-            for index in range(len(scalar)):
+            for index in range(len(scalar) - 5):
                 if index % 8 == 0:
                     scalar[index] = (scalar[index + 4] + scalar[index + 5]) / 2
                 if index % 8 == 2:
@@ -100,8 +105,10 @@ class UpdatePlots:
             cmap="inferno",
             shading="gouraud",
         )  # use shading="gouraud" to make it smoother
-        cbi = self._fig.colorbar(pcm, pad=0.2, cax=self._ax["B"], aspect=10)
-        cbi.set_label(self._skey, fontsize=20)
+        cbi = self._fig.colorbar(
+            pcm, pad=0.5, cax=self._ax["B"], aspect=10, format=lambda x, _: f"{x:.1f}"
+        )
+        # cbi.set_label(self._skey, fontsize=20)
         self._ax["A"].set_ylabel("y / m")
         self._ax["A"].set_xlabel("x / m")
         self._ax["A"].set_facecolor("white")
@@ -146,11 +153,17 @@ class UpdatePlots:
                 s=50.0,
                 lw=5.0,
             )
+            if self._radius is np.inf:
+                norm = 1
+            else:
+                norm = self._radius / 800
             self._ax["A"].annotate(
                 str(dataind),
-                (x_pos[dataind] + 10, y_pos[dataind] + 10),
+                (x_pos[dataind], y_pos[dataind]),
+                (x_pos[dataind] + (norm * 10), y_pos[dataind] + (norm * 10)),
                 color="green",
                 size="large",
+                arrowprops=dict(arrowstyle="fancy", connectionstyle="arc3"),
             )
             self._fig.canvas.flush_events()
 
@@ -178,6 +191,10 @@ class UpdatePlots:
                 pass
             self._fig.canvas.draw_idle()
         return True
+
+    def update_rad(self, rad=None):
+        if rad is not None:
+            self._radius = np.float(rad)
 
     def update_skeys(self, skey=None):
         if skey is not None:
@@ -226,7 +243,6 @@ class UpdatePlots:
         else:
             mask = np.arange(len(self._pulses))
         indices = np.arange(len(self._pulses))[mask]
-        print(indices)
         self._ax["C"].boxplot(
             self._pulses[indices, :, 0], showfliers=showfliers, meanline=True
         )
@@ -301,7 +317,7 @@ def view(
     fig.canvas.mpl_connect("pick_event", upplt.onpick)
 
     # Add a button to clear the pulse plots
-    axclear = fig.add_axes([0.5, 0.01, 0.05, 0.025])
+    axclear = fig.add_axes([0.33, 0.01, 0.07, 0.03])
     bnext = Button(axclear, "Clear")
     bnext.on_clicked(upplt.clear_plots)
 
@@ -311,8 +327,8 @@ def view(
     axradio = fig.add_axes(
         [
             0.03,
-            0.95,
-            0.07 * np.where(len(scalar_fns.keys()) > 6, 6, len(scalar_fns.keys())),
+            0.92,
+            0.08 * np.where(len(scalar_fns.keys()) > 6, 6, len(scalar_fns.keys())),
             0.025 * (len(scalar_fns.keys()) // 6 + 1),
         ]
     )
@@ -320,24 +336,31 @@ def view(
         axradio,
         scalar_fns.keys(),
         orientation="horizontal",
+        fontsize="x-small",
         active=0,
     )
     radio.on_clicked(upplt.update_skeys)
-    axradio2 = fig.add_axes([0.06, 0.07, 0.05 * len(data.keys()), 0.025])
+    axradio2 = fig.add_axes([0.06, 0.04, 0.10 * len(data.keys()), 0.025])
     radio2 = MyRadioButtons(
-        axradio2,
-        data.keys(),
-        orientation="horizontal",
-        active=0,
+        axradio2, data.keys(), orientation="horizontal", active=0, fontsize="x-small"
     )
     radio2.on_clicked(upplt.update_dkeys)
+    axradio3 = fig.add_axes([0.66, 0.04, 0.3, 0.05])
+    radio3 = MyRadioButtons(
+        axradio3,
+        [f"{x:.1f}" for x in np.linspace(30, 800, 12)],
+        orientation="horizontal",
+        active=0,
+        fontsize="x-small",
+    )
+    radio3.on_clicked(upplt.update_rad)
     fig.canvas.mpl_connect("pick_event", upplt.onpick)
 
-    axclear = fig.add_axes([0.45, 0.01, 0.05, 0.025])
+    axclear = fig.add_axes([0.40, 0.01, 0.07, 0.03])
     bbox = Button(axclear, "Box Plots")
     bbox.on_clicked(upplt.box_plots)
 
-    axclear = fig.add_axes([0.40, 0.01, 0.05, 0.025])
+    axclear = fig.add_axes([0.47, 0.01, 0.07, 0.03])
     bbox1 = Button(axclear, "All Plots")
     bbox1.on_clicked(upplt.all_pulse_plots)
 
