@@ -4,6 +4,7 @@ Plot radio pulses and fluence maps.
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 import scipy.interpolate as intp
 from radiotools.analyses import energy_fluence
 
@@ -14,6 +15,29 @@ plt.rc("axes", labelsize=fnt_size)  # fontsize of the x and y labels
 plt.rc("xtick", labelsize=fnt_size)  # fontsize of the x tick labels
 plt.rc("ytick", labelsize=fnt_size)  # fontsize of the y tick labels
 plt.rc("legend", fontsize=fnt_size)
+
+
+def plot_pulses_interactive(real, sim, antenna=7):
+    plots = []
+    for i in range(2):
+        fig = go.Figure(
+            data=go.Scatter(
+                x=np.arange(256),
+                y=real[antenna, :, i],
+                mode="lines",
+                name=f"real: {antenna} - {i}",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=np.arange(256),
+                y=sim[antenna, :, i],
+                mode="lines",
+                name=f"sim: {antenna} - {i}",
+            )
+        )
+        plots.append(fig)
+    return plots
 
 
 def plot_pulses(pulses):
