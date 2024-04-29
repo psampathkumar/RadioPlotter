@@ -80,11 +80,15 @@ class UpdatePlots:
         scalar = self._scalar_fns[self._skey](self._pulses, self._pos, self._meta)
         print(scalar.shape)
         if self._data[self._dkey]["hack"]:
-            for index in range(len(scalar) - 5):
-                if index % 8 == 0:
-                    scalar[index] = (scalar[index + 4] + scalar[index + 5]) / 2
-                if index % 8 == 2:
-                    scalar[index] = (scalar[index - 1] + scalar[index + 1]) / 2
+            for index in range(len(scalar)):
+                # TODO: Fix this hack later
+                try:
+                    if index % 8 == 0:
+                        scalar[index] = (scalar[index + 4] + scalar[index + 5]) / 2
+                    if index % 8 == 2:
+                        scalar[index] = (scalar[index - 1] + scalar[index + 1]) / 2
+                except IndexError:
+                    pass
         xs = np.linspace(np.nanmin(x_pos), np.nanmax(x_pos), 100)
         ys = np.linspace(np.nanmin(y_pos), np.nanmax(y_pos), 100)
         xx, yy = np.meshgrid(xs, ys)
@@ -153,6 +157,7 @@ class UpdatePlots:
                 s=50.0,
                 lw=5.0,
             )
+            # TODO: Use transforms or this normalization ?
             if self._radius is np.inf:
                 norm = 1
             else:
@@ -278,7 +283,7 @@ class UpdatePlots:
         self._fig.canvas.draw_idle()
 
 
-def view(
+def view_footprint(
     data,
     scalar_fns,
 ):
@@ -350,7 +355,7 @@ def view(
         axradio3,
         [f"{x:.1f}" for x in np.linspace(30, 800, 12)],
         orientation="horizontal",
-        active=0,
+        active=11,
         fontsize="x-small",
     )
     radio3.on_clicked(upplt.update_rad)
