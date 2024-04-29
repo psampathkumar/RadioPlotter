@@ -1,3 +1,6 @@
+"""
+Event Viewer which sees the footprint of a scalar function.
+"""
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button
@@ -22,6 +25,10 @@ def get_default_key(dictt):
 
 
 class UpdatePlots:
+    """
+    Class to hold all the plot information.
+    """
+
     def __init__(
         self,
         fig,
@@ -73,14 +80,24 @@ class UpdatePlots:
         assert key in self._scalar_fns
         self._skey = key
 
-    def update_plots(self, event=None):
+    def update_plots(self, _event=None):
+        """
+        Update the plots with the current information.
+        Parameters
+        ----------
+        event - used to trigger based on matplotlib handlers
+
+        Returns
+        -------
+
+        """
         self._ax["A"].clear()
         x_pos = self._pos[:, 0]
         y_pos = self._pos[:, 1]
         scalar = self._scalar_fns[self._skey](self._pulses, self._pos, self._meta)
         print(scalar.shape)
         if self._data[self._dkey]["hack"]:
-            for index in range(len(scalar)):
+            for index, _ in enumerate(scalar):
                 # TODO: Fix this hack later
                 try:
                     if index % 8 == 0:
@@ -93,7 +110,7 @@ class UpdatePlots:
         ys = np.linspace(np.nanmin(y_pos), np.nanmax(y_pos), 100)
         xx, yy = np.meshgrid(xs, ys)
         # points within a circle
-        in_star = xx**2 + yy**2 <= np.nanmax(x_pos**2 + y_pos**2)
+        in_star = np.array(xx**2 + yy**2 <= np.nanmax(x_pos**2 + y_pos**2))
         interp_func = RBFInterpolator(list(zip(x_pos, y_pos)), scalar, kernel="quintic")
         fp_interp = np.where(
             in_star.flatten(),
@@ -109,10 +126,10 @@ class UpdatePlots:
             cmap="inferno",
             shading="gouraud",
         )  # use shading="gouraud" to make it smoother
-        cbi = self._fig.colorbar(
+        _cbi = self._fig.colorbar(
             pcm, pad=0.5, cax=self._ax["B"], aspect=10, format=lambda x, _: f"{x:.1f}"
         )
-        # cbi.set_label(self._skey, fontsize=20)
+        # _cbi.set_label(self._skey, fontsize=20)
         self._ax["A"].set_ylabel("y / m")
         self._ax["A"].set_xlabel("x / m")
         self._ax["A"].set_facecolor("white")
@@ -134,18 +151,18 @@ class UpdatePlots:
         self._fig.canvas.draw_idle()
 
     def onpick(self, event):
+        """Pick to plot the picked antenna."""
         if event.artist != self._antenna_plt:
             return
-        n = len(event.ind)
-        if not n:
+        if len(event.ind) == 0:
             return
-        else:
-            dataind = event.ind[0]
+        dataind = event.ind[0]
         self.plot_antennas([dataind])
         self._plotted_antenna.append(dataind)
         self._plotted_dataset.append(self._dkey)
 
     def mark_antennas(self, datainds):
+        """Mark the plotted antennas."""
         for dataind in datainds:
             x_pos = self._pos[:, 0]
             y_pos = self._pos[:, 1]
@@ -173,7 +190,8 @@ class UpdatePlots:
             self._fig.canvas.flush_events()
 
     def plot_antennas(self, datainds):
-        for i, dataind in enumerate(datainds):
+        """Plot all the previously marked antennas."""
+        for _, dataind in enumerate(datainds):
             if (dataind in self._plotted_antenna) and (
                 self._dkey in self._plotted_dataset
             ):
@@ -198,10 +216,12 @@ class UpdatePlots:
         return True
 
     def update_rad(self, rad=None):
+        """Update the zoomed radius of the footprint."""
         if rad is not None:
-            self._radius = np.float(rad)
+            self._radius = np.float64(rad)
 
     def update_skeys(self, skey=None):
+        """Update the scalar key based on the chosen scalar function."""
         if skey is not None:
             self.skey = skey
             self._ax["A"].clear()
@@ -209,6 +229,7 @@ class UpdatePlots:
             self.mark_antennas(self._plotted_antenna)
 
     def update_dkeys(self, dkey=None):
+        """Update the data key based on the chosen data function."""
         if dkey is not None:
             self.dkey = dkey
             self._ax["A"].clear()
@@ -216,7 +237,8 @@ class UpdatePlots:
             self.plot_antennas(self._plotted_antenna)
             self._plotted_dataset.append(self._dkey)
 
-    def all_pulse_plots(self, event):
+    def all_pulse_plots(self, _event):
+        """Plot all the pulses at once of the current event."""
         if self._data[self._dkey]["hack"]:
             mask = np.logical_not(
                 np.arange(len(self._pulses)) % 8 == 0
@@ -237,7 +259,8 @@ class UpdatePlots:
             pass
         self._fig.canvas.draw_idle()
 
-    def box_plots(self, event):
+    def box_plots(self, _event):
+        """Box plot of all the pulses of the current event."""
         print("Box Plotting")
         showfliers = False
         if self._data[self._dkey]["hack"]:
@@ -269,7 +292,8 @@ class UpdatePlots:
             pass
         self._fig.canvas.draw_idle()
 
-    def clear_plots(self, event):
+    def clear_plots(self, _event):
+        """Clear all the plots and marked antenna/dataset lists."""
         self._ax["A"].clear()
         self._ax["B"].clear()
         self._ax["C"].clear()
@@ -287,8 +311,70 @@ def view_footprint(
     data,
     scalar_fns,
 ):
+    """
+    Externally called function to display the eventviewer with the footprint.
+
+
+    Parameters
+    ----------
+    data - a dictionary with the datasets.
+        keys - pos - positions of the antennas
+             - real - real valued pulses at the antenna
+             - meta - metadata
+             - hack - to apply the hack to skip along the vB line
+    scalar_fns - a dictionary with the scalar functions
+
+    Returns
+    -------
+    None
+
+    Example
+    -------
+
+    view_footprint(
+        {
+            "gece": {
+                "pos": pos,
+                "real": real,
+                "meta": meta,
+                "hack": True,
+            },
+            "gece_shifted": {
+                "pos": pos,
+                "real": center_pulses(real, peak_finder=get_peak_hilbert),
+                "meta": meta,
+                "hack": True,
+            },
+            "gece_sim": {
+                "pos": pos,
+                "real": sim,
+                "meta": meta,
+                "hack": True,
+            },
+            "vbvvb": {
+                "pos": sph2cart(pos1),
+                "real": real1,
+                "meta": meta1,
+                "hack": False,
+            },
+        },
+        {
+            "Energy Fluence 0 ": get_fluences0,
+            "Energy Fluence 1": get_fluences1,
+            "Polarity 0 ": get_polarity0,
+            "Polarity 1": get_polarity1,
+            "N Polarity 0 ": get_npolarity0,
+            "N Polarity 1": get_npolarity1,
+            "N2 Polarity 0 ": get_n2polarity0,
+            "N2 Polarity 1": get_n2polarity1,
+            "SMax Value 0": get_smax_value0,
+            "SMax Value 1": get_smax_value1,
+            "Log Max Value": get_logmax_value,
+            "Unthinned Pulses": thin_or_not,
+        } )
+    """
     # get attributes from first key
-    pulses, pos, meta = get_attributes(data, list(data.keys())[0])
+    pulses, _, meta = get_attributes(data, list(data.keys())[0])
 
     if pulses.shape[-1] == 1:
         mosaic_string = """
@@ -371,4 +457,3 @@ def view_footprint(
 
     plt.tight_layout()
     plt.show()
-    return
