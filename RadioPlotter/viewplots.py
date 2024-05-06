@@ -82,6 +82,11 @@ class PlotViewer:
             self._pulse_process(self._pulses[dataind, :, 1]), label=dataind
         )
         self._ax["C"].set_xticks([])
+        if self._pulses.shape[-1] > 2:
+            self._ax["D"].plot(
+                self._pulse_process(self._pulses[dataind, :, 2]), label=dataind
+            )
+            self._ax["D"].set_xticks([])
         self._ax["B"].legend()
         self._fig.canvas.draw_idle()
 
@@ -101,6 +106,7 @@ class PlotViewer:
         self._ax["A"].clear()
         self._ax["B"].clear()
         self._ax["C"].clear()
+        self._ax["D"].clear()
         self._fig.canvas.draw_idle()
 
     def update_skey(self, key):
@@ -118,7 +124,7 @@ class PlotViewer:
 
 def view_plots(data, scalar_fns, pulse_process=lambda x: x):
     fig, ax = plt.subplot_mosaic(
-        "AB\nAC",
+        "AB\nAC\nAD",
         figsize=(20, 10),
         gridspec_kw={"width_ratios": [50, 50]},
     )
