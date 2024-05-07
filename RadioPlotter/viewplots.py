@@ -4,6 +4,7 @@ Plot Viewer which sees two scalar functions against each other.
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 
 from RadioPlotter.utilities.customelements import MyRadioButtons
 from RadioPlotter.viewevent import get_attributes, get_default_key
@@ -102,7 +103,7 @@ class PlotViewer:
         self._ax["A"].set_title(self.skey)
         self._fig.canvas.draw_idle()
 
-    def clear(self, event=None):
+    def clear_plots(self, event=None):
         self._ax["A"].clear()
         self._ax["B"].clear()
         self._ax["C"].clear()
@@ -112,13 +113,13 @@ class PlotViewer:
     def update_skeys(self, key):
         self.dkey = self._dkey
         self.skey = key
-        self.clear()
+        self.clear_plots()
         self.plot()
 
     def update_dkeys(self, key):
         self.dkey = key
         self.skey = self._skey
-        self.clear()
+        self.clear_plots()
         self.plot()
 
 
@@ -131,6 +132,10 @@ def view_plots(data, scalar_fns, pulse_process=lambda x: x):
 
     # Plot the first key by default and setup pulse picker
     upplt = PlotViewer(fig, ax, data, scalar_fns, pulse_process)
+    axclear = fig.add_axes([0.33, 0.01, 0.07, 0.03])
+    bnext = Button(axclear, "Clear")
+    bnext.on_clicked(upplt.clear_plots)
+
     axradio = fig.add_axes(
         [
             0.03,
