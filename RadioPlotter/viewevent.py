@@ -1,6 +1,7 @@
 """
 Event Viewer which sees the footprint of a scalar function.
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Button
@@ -24,38 +25,30 @@ def get_default_key(dictt):
     return list(dictt.keys())[0]
 
 
-class UpdatePlots:
-    """
-    Class to hold all the plot information.
-    """
-
-    def __init__(
-        self,
-        fig,
-        ax,
-        scalar_fns,
-        data,
-        scalar_key=None,
-        data_key=None,
-    ):
-        if scalar_key is None:
-            self._skey = get_default_key(scalar_fns)
-        else:
-            self._skey = scalar_key
+class BaseViewer:
+    def __init__(self, fig, ax, scalar_fns, data):
         self._antenna_plt = None
         self._data = data
         self._scalar_fns = scalar_fns
         self._fig = fig
         self._ax = ax
-
-        if data_key is None:
-            self._dkey = get_default_key(data)
-        else:
-            self._dkey = data_key
         self._radius = np.inf
-        self._pulses, self._pos, self._meta = get_attributes(self._data, self._dkey)
+        self.skey = get_default_key(scalar_fns)
+
+        self.dkey = get_default_key(data)
         self._plotted_antenna = []
         self._plotted_dataset = []
+        axclear = self._fig.add_axes([0.40, 0.01, 0.07, 0.03])
+        bbox = Button(axclear, "Box Plots")
+        bbox.on_clicked(self.box_plots)
+
+        axclear = self._fig.add_axes([0.47, 0.01, 0.07, 0.03])
+        bbox1 = Button(axclear, "All Plots")
+        bbox1.on_clicked(self.all_pulse_plots)
+
+        axclear = self._fig.add_axes([0.33, 0.01, 0.07, 0.03])
+        bnext = Button(axclear, "Clear")
+        bnext.on_clicked(self.clear_plots)
 
     @property
     def dkey(self):
@@ -79,6 +72,84 @@ class UpdatePlots:
     def skey(self, key):
         assert key in self._scalar_fns
         self._skey = key
+
+    def all_pulse_plots(self, _event):
+        """Plot all the pulses at once of the current event."""
+        if self._data[self._dkey]["hack"]:
+            mask = np.logical_not(
+                np.arange(len(self._pulses)) % 8 == 0
+            ) & np.logical_not(np.arange(len(self._pulses)) % 8 == 2)
+        else:
+            mask = np.arange(len(self._pulses))
+        indices = np.arange(len(self._pulses))[mask]
+        self._ax["C"].plot(self._pulses[indices, :, 0].T)
+        self._ax["C"].set_xticks([])
+        self._ax["D"].plot(self._pulses[indices, :, 1].T)
+        self._ax["D"].set_xticks([])
+        try:
+            self._ax["E"].plot(self._pulses[indices, :, 2].T)
+            self._ax["E"].set_xticks([])
+        except KeyError:
+            pass
+        except IndexError:
+            pass
+        self._fig.canvas.draw_idle()
+
+    def box_plots(self, _event):
+        """Box plot of all the pulses of the current event."""
+        print("Box Plotting")
+        showfliers = False
+        if self._data[self._dkey]["hack"]:
+            print("hacked")
+            mask = np.logical_not(
+                np.arange(len(self._pulses)) % 8 == 0
+            ) & np.logical_not(np.arange(len(self._pulses)) % 8 == 2)
+        else:
+            mask = np.arange(len(self._pulses))
+        indices = np.arange(len(self._pulses))[mask]
+        self._ax["C"].boxplot(
+            self._pulses[indices, :, 0], showfliers=showfliers, meanline=True
+        )
+        self._ax["C"].set_xticks([])
+        self._ax["D"].boxplot(
+            self._pulses[indices, :, 1], showfliers=showfliers, meanline=True
+        )
+        self._ax["D"].set_xticks([])
+        try:
+            self._ax["E"].boxplot(
+                self._pulses[indices, :, 2],
+                showfliers=showfliers,
+                meanline=True,
+            )
+            self._ax["E"].set_xticks([])
+        except KeyError:
+            pass
+        except IndexError:
+            pass
+        self._fig.canvas.draw_idle()
+
+    def clear_plots(self, _event):
+        """Clear all the plots and marked antenna/dataset lists."""
+        self._ax["A"].clear()
+        self._ax["B"].clear()
+        self._ax["C"].clear()
+        self._ax["D"].clear()
+        try:
+            self._ax["E"].clear()
+        except KeyError:
+            pass
+        self._plotted_antenna = []
+        self._plotted_dataset = []
+        self._fig.canvas.draw_idle()
+
+
+class FootprintViewer(BaseViewer):
+    """
+    Class to hold all the plot information.
+    """
+
+    def __init__(self, fig, ax, scalar_fns, data):
+        BaseViewer.__init__(self, fig, ax, scalar_fns, data)
 
     def update_plots(self, _event=None):
         """
@@ -237,75 +308,6 @@ class UpdatePlots:
             self.plot_antennas(self._plotted_antenna)
             self._plotted_dataset.append(self._dkey)
 
-    def all_pulse_plots(self, _event):
-        """Plot all the pulses at once of the current event."""
-        if self._data[self._dkey]["hack"]:
-            mask = np.logical_not(
-                np.arange(len(self._pulses)) % 8 == 0
-            ) & np.logical_not(np.arange(len(self._pulses)) % 8 == 2)
-        else:
-            mask = np.arange(len(self._pulses))
-        indices = np.arange(len(self._pulses))[mask]
-        self._ax["C"].plot(self._pulses[indices, :, 0].T)
-        self._ax["C"].set_xticks([])
-        self._ax["D"].plot(self._pulses[indices, :, 1].T)
-        self._ax["D"].set_xticks([])
-        try:
-            self._ax["E"].plot(self._pulses[indices, :, 2].T)
-            self._ax["E"].set_xticks([])
-        except KeyError:
-            pass
-        except IndexError:
-            pass
-        self._fig.canvas.draw_idle()
-
-    def box_plots(self, _event):
-        """Box plot of all the pulses of the current event."""
-        print("Box Plotting")
-        showfliers = False
-        if self._data[self._dkey]["hack"]:
-            print("hacked")
-            mask = np.logical_not(
-                np.arange(len(self._pulses)) % 8 == 0
-            ) & np.logical_not(np.arange(len(self._pulses)) % 8 == 2)
-        else:
-            mask = np.arange(len(self._pulses))
-        indices = np.arange(len(self._pulses))[mask]
-        self._ax["C"].boxplot(
-            self._pulses[indices, :, 0], showfliers=showfliers, meanline=True
-        )
-        self._ax["C"].set_xticks([])
-        self._ax["D"].boxplot(
-            self._pulses[indices, :, 1], showfliers=showfliers, meanline=True
-        )
-        self._ax["D"].set_xticks([])
-        try:
-            self._ax["E"].boxplot(
-                self._pulses[indices, :, 2],
-                showfliers=showfliers,
-                meanline=True,
-            )
-            self._ax["E"].set_xticks([])
-        except KeyError:
-            pass
-        except IndexError:
-            pass
-        self._fig.canvas.draw_idle()
-
-    def clear_plots(self, _event):
-        """Clear all the plots and marked antenna/dataset lists."""
-        self._ax["A"].clear()
-        self._ax["B"].clear()
-        self._ax["C"].clear()
-        self._ax["D"].clear()
-        try:
-            self._ax["E"].clear()
-        except KeyError:
-            pass
-        self._plotted_antenna = []
-        self._plotted_dataset = []
-        self._fig.canvas.draw_idle()
-
 
 def view_footprint(
     data,
@@ -403,14 +405,9 @@ def view_footprint(
     )
 
     # Plot the first key by default and setup pulse picker
-    upplt = UpdatePlots(fig, ax, scalar_fns, data)
+    upplt = FootprintViewer(fig, ax, scalar_fns, data)
     upplt.update_plots()
     fig.canvas.mpl_connect("pick_event", upplt.onpick)
-
-    # Add a button to clear the pulse plots
-    axclear = fig.add_axes([0.33, 0.01, 0.07, 0.03])
-    bnext = Button(axclear, "Clear")
-    bnext.on_clicked(upplt.clear_plots)
 
     # Buttons for the scalar plots
     print(meta.shape)
@@ -446,14 +443,6 @@ def view_footprint(
     )
     radio3.on_clicked(upplt.update_rad)
     fig.canvas.mpl_connect("pick_event", upplt.onpick)
-
-    axclear = fig.add_axes([0.40, 0.01, 0.07, 0.03])
-    bbox = Button(axclear, "Box Plots")
-    bbox.on_clicked(upplt.box_plots)
-
-    axclear = fig.add_axes([0.47, 0.01, 0.07, 0.03])
-    bbox1 = Button(axclear, "All Plots")
-    bbox1.on_clicked(upplt.all_pulse_plots)
 
     plt.tight_layout()
     plt.show()
