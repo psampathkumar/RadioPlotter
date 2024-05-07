@@ -294,6 +294,7 @@ class FootprintViewer(BaseViewer):
     def update_skeys(self, skey=None):
         """Update the scalar key based on the chosen scalar function."""
         if skey is not None:
+            self.dkey = self._dkey
             self.skey = skey
             self._ax["A"].clear()
             self.update_plots()
@@ -303,6 +304,7 @@ class FootprintViewer(BaseViewer):
         """Update the data key based on the chosen data function."""
         if dkey is not None:
             self.dkey = dkey
+            self.skey = self._skey
             self._ax["A"].clear()
             self.update_plots()
             self.plot_antennas(self._plotted_antenna)
@@ -376,28 +378,12 @@ def view_footprint(
         } )
     """
     # get attributes from first key
-    pulses, _, meta = get_attributes(data, list(data.keys())[0])
-
-    if pulses.shape[-1] == 1:
-        mosaic_string = """
-        ABC
-        """
-        width_ratio = [48, 1, 51]
-    elif pulses.shape[-1] == 2:
-        mosaic_string = """
-        AABC
-        AABD
-        """
-        width_ratio = [24, 24, 1, 51]
-    elif pulses.shape[-1] == 3:
-        mosaic_string = """
-        AAABC
-        AAABD
-        AAABE
-        """
-        width_ratio = [16, 16, 16, 1, 51]
-    else:
-        raise RuntimeError("Only 3 polarizations are supported")
+    mosaic_string = """
+    AAABC
+    AAABD
+    AAABE
+    """
+    width_ratio = [16, 16, 16, 1, 51]
     fig, ax = plt.subplot_mosaic(
         mosaic_string,
         figsize=(20, 10),
@@ -410,7 +396,6 @@ def view_footprint(
     fig.canvas.mpl_connect("pick_event", upplt.onpick)
 
     # Buttons for the scalar plots
-    print(meta.shape)
     print(scalar_fns.keys())
     axradio = fig.add_axes(
         [
