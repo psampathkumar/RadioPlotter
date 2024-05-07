@@ -109,13 +109,13 @@ class PlotViewer:
         self._ax["D"].clear()
         self._fig.canvas.draw_idle()
 
-    def update_skey(self, key):
+    def update_skeys(self, key):
         self.dkey = self._dkey
         self.skey = key
         self.clear()
         self.plot()
 
-    def update_dkey(self, key):
+    def update_dkeys(self, key):
         self.dkey = key
         self.skey = self._skey
         self.clear()
@@ -146,12 +146,12 @@ def view_plots(data, scalar_fns, pulse_process=lambda x: x):
         fontsize="x-small",
         active=0,
     )
-    radio.on_clicked(upplt.update_skey)
+    radio.on_clicked(upplt.update_skeys)
     axradio2 = fig.add_axes([0.06, 0.04, 0.10 * len(data.keys()), 0.025])
     radio2 = MyRadioButtons(
         axradio2, data.keys(), orientation="horizontal", active=0, fontsize="x-small"
     )
-    radio2.on_clicked(upplt.update_dkey)
+    radio2.on_clicked(upplt.update_dkeys)
     upplt.plot()
     fig.canvas.callbacks.connect("pick_event", upplt.onpick)
     plt.show()
