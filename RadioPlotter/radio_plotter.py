@@ -43,6 +43,15 @@ def plot_pulses_interactive(real, sim, antenna=7):
 def plot_pulses(pulses):
     """
     Plot pulses from efield.
+
+    Parameters
+    ---------
+    pulses: np.array
+        Traces of the E-field
+
+    Returns
+    -------
+    None
     """
 
     timec7 = pulses[:, -4]
@@ -202,7 +211,5 @@ def plot_fluence_maps(
     positions = np.array(positions)
     energy_fluences = np.array(energy_fluences)
 
-    print(len(positions), len(energy_fluences))
     assert len(positions) == len(energy_fluences)
-    print(len(positions))
     plot_interpolated_footprint(positions, energy_fluences, interp)
