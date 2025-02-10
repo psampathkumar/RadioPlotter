@@ -10,7 +10,7 @@ from scipy.interpolate import RBFInterpolator
 from RadioPlotter.utilities.customelements import MyRadioButtons
 
 
-def get_attributes(data, key, radius=np.inf):
+def get_attributes(data : dict, key : str, radius=np.inf):
     """Separate pulses, position and meta data from attribute dictionary."""
     pos = data[key]["pos"]
     pulses = data[key]["real"]
@@ -20,7 +20,7 @@ def get_attributes(data, key, radius=np.inf):
     return pulses[in_ring], pos[in_ring], meta[in_ring]
 
 
-def get_default_key(dictt):
+def get_default_key(dictt: dict):
     """Get the first key of dict."""
     return list(dictt.keys())[0]
 
@@ -38,25 +38,14 @@ class BaseViewer:
         self.dkey = get_default_key(data)
         self._plotted_antenna = []
         self._plotted_dataset = []
-        axclear = self._fig.add_axes([0.40, 0.01, 0.07, 0.03])
-        bbox = Button(axclear, "Box Plots")
-        bbox.on_clicked(self.box_plots)
-
-        axclear = self._fig.add_axes([0.47, 0.01, 0.07, 0.03])
-        bbox1 = Button(axclear, "All Plots")
-        bbox1.on_clicked(self.all_pulse_plots)
-
-        axclear = self._fig.add_axes([0.33, 0.01, 0.07, 0.03])
-        bnext = Button(axclear, "Clear")
-        bnext.on_clicked(self.clear_plots)
 
     @property
-    def dkey(self):
-        """key to the data dictionary."""
+    def dkey(self: "BaseViewer") -> str:
+        """Key to the data dictionary."""
         return self._dkey
 
     @dkey.setter
-    def dkey(self, key):
+    def dkey(self: "BaseViewer", key : str) -> None:
         assert key in self._data
         self._dkey = key
         self._pulses, self._pos, self._meta = get_attributes(
@@ -64,12 +53,12 @@ class BaseViewer:
         )
 
     @property
-    def skey(self):
-        """key to the scalar function dictionary."""
+    def skey(self: "BaseViewer") -> str:
+        """Key to the scalar function dictionary."""
         return self._skey
 
     @skey.setter
-    def skey(self, key):
+    def skey(self : "BaseViewer", key : str) -> None:
         assert key in self._scalar_fns
         self._skey = key
 
