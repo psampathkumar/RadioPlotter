@@ -17,6 +17,33 @@ plt.rc("ytick", labelsize=fnt_size)  # fontsize of the y tick labels
 plt.rc("legend", fontsize=fnt_size)
 
 
+def plot_scatter_interactive(real, sim):
+    plots = []
+    for i in range(2):
+        fig = go.Figure(
+            data=go.Scatter(
+                x=np.arange(real.shape[0]),
+                y=real[:, 0, i],
+                mode="lines",
+                name=f"real: - {i}",
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=np.arange(sim.shape[0]),
+                y=sim[:, i],
+                mode="lines",
+                name=f"sim: - {i}",
+            )
+        )
+        plots.append(fig)
+    return plots
+
+def plot_hist(data):
+    import plotly.express as px
+    fig = px.histogram(data)
+    return fig
+
 def plot_pulses_interactive(real, sim, antenna=7):
     plots = []
     for i in range(2):
