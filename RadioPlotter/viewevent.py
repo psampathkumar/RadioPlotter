@@ -95,6 +95,7 @@ class BaseViewer:
             ) & np.logical_not(np.arange(len(self._pulses)) % 8 == 2)
         else:
             mask = np.arange(len(self._pulses))
+        print(self._pulses.shape)
         indices = np.arange(len(self._pulses))[mask]
         self._ax["C"].boxplot(
             self._pulses[indices, :, 0], showfliers=showfliers, meanline=True
@@ -384,6 +385,17 @@ def view_footprint(
     upplt.update_plots()
     fig.canvas.mpl_connect("pick_event", upplt.onpick)
 
+    axbbox = upplt._fig.add_axes([0.40, 0.01, 0.07, 0.03])
+    bbox = Button(axbbox, "Box Plots")
+    bbox.on_clicked(upplt.box_plots)
+
+    axallplot = upplt._fig.add_axes([0.47, 0.01, 0.07, 0.03])
+    bbox1 = Button(axallplot, "All Plots")
+    bbox1.on_clicked(upplt.all_pulse_plots)
+
+    axclear = upplt._fig.add_axes([0.33, 0.01, 0.07, 0.03])
+    bnext = Button(axclear, "Clear")
+    bnext.on_clicked(upplt.clear_plots)
     # Buttons for the scalar plots
     print(scalar_fns.keys())
     axradio = fig.add_axes(
