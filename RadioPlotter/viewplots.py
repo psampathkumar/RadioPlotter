@@ -30,10 +30,6 @@ class PlotViewer:
         assert key in self._data
         self._dkey = key
         self._pulses, self._pos, self._meta = get_attributes(self._data, self._dkey)
-        mask = np.abs(self._pos[:, 0]) < 10
-        self._pulses = self._pulses[mask]
-        self._pos = self._pos[mask]
-        self._meta = self._meta[mask]
 
     @property
     def skey(self):
@@ -100,6 +96,8 @@ class PlotViewer:
         )
         self._ax["A"].set_ylabel(self._scalar_fns[self.skey]["yfunc"].__name__)
         self._ax["A"].set_xlabel(self._scalar_fns[self.skey]["xfunc"].__name__)
+        self._ax["A"].set_xscale(self._scalar_fns[self.skey]["xscale"])
+        self._ax["A"].set_yscale(self._scalar_fns[self.skey]["yscale"])
         self._ax["A"].set_title(self.skey)
         self._fig.canvas.draw_idle()
 
@@ -140,7 +138,7 @@ def view_plots(data, scalar_fns, pulse_process=lambda x: x):
         [
             0.03,
             0.92,
-            0.18 * np.where(len(scalar_fns.keys()) > 6, 6, len(scalar_fns.keys())),
+            0.15 * np.where(len(scalar_fns.keys()) > 6, 6, len(scalar_fns.keys())),
             0.025 * (len(scalar_fns.keys()) // 6 + 1),
         ]
     )
