@@ -1,4 +1,5 @@
 """Example Script."""
+
 import argparse
 
 import numpy as np
@@ -66,7 +67,7 @@ if opt.p__plotter:
                 "xfunc": get_lateral_distance,
                 "yfunc": get_max_value1,
             },
-        }
+        },
         # pulse_process=spectrum,
     )
 else:
