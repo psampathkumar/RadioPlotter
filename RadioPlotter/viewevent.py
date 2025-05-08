@@ -10,7 +10,7 @@ from scipy.interpolate import RBFInterpolator
 from RadioPlotter.utilities.customelements import MyRadioButtons
 
 
-def get_attributes(data : dict, key : str, radius=np.inf):
+def get_attributes(data: dict, key: str, radius=np.inf):
     """Separate pulses, position and meta data from attribute dictionary."""
     pos = data[key]["pos"]
     pulses = data[key]["real"]
@@ -45,7 +45,7 @@ class BaseViewer:
         return self._dkey
 
     @dkey.setter
-    def dkey(self: "BaseViewer", key : str) -> None:
+    def dkey(self: "BaseViewer", key: str) -> None:
         assert key in self._data
         self._dkey = key
         self._pulses, self._pos, self._meta = get_attributes(
@@ -58,7 +58,7 @@ class BaseViewer:
         return self._skey
 
     @skey.setter
-    def skey(self : "BaseViewer", key : str) -> None:
+    def skey(self: "BaseViewer", key: str) -> None:
         assert key in self._scalar_fns
         self._skey = key
 

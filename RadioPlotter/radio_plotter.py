@@ -39,10 +39,13 @@ def plot_scatter_interactive(real, sim):
         plots.append(fig)
     return plots
 
+
 def plot_hist(data):
     import plotly.express as px
+
     fig = px.histogram(data)
     return fig
+
 
 def plot_pulses_interactive(real, sim, antenna=7):
     plots = []
@@ -96,8 +99,14 @@ def plot_pulses(pulses):
     plt.show()
 
 
-def plot_interpolated_footprint(positions, energy_fluences, interpolator=intp.RBFInterpolator,
-                                mark_antennas=None, text=None, radius=np.inf):
+def plot_interpolated_footprint(
+    positions,
+    energy_fluences,
+    interpolator=intp.RBFInterpolator,
+    mark_antennas=None,
+    text=None,
+    radius=np.inf,
+):
     """
 
     Plot the interpolated footprint.
@@ -125,8 +134,8 @@ def plot_interpolated_footprint(positions, energy_fluences, interpolator=intp.RB
     nplots = energy_fluences.shape[-1]
     fig, ax = plt.subplots(
         1,
-        nplots*2,
-        gridspec_kw={"width_ratios": [40, 1]*nplots},
+        nplots * 2,
+        gridspec_kw={"width_ratios": [40, 1] * nplots},
         figsize=[int(2.66 * fnt_size), fnt_size],
     )
     for ii in range(energy_fluences.shape[-1]):
@@ -173,8 +182,8 @@ def plot_interpolated_footprint(positions, energy_fluences, interpolator=intp.RB
             y_pos,
             edgecolor="w",
             facecolor="none",
-            s=fnt_size/2,
-            lw=fnt_size/10,
+            s=fnt_size / 2,
+            lw=fnt_size / 10,
         )
         cbi = fig.colorbar(pcm, pad=0.02, cax=ax[2 * ii + 1])
         cbi.set_label(r"$Time (ns)$", fontsize=2 * fnt_size)
@@ -183,8 +192,8 @@ def plot_interpolated_footprint(positions, energy_fluences, interpolator=intp.RB
         ax[2 * ii + 0].set_xlabel("vxB (m)", fontsize=2 * fnt_size)
         ax[2 * ii + 0].set_facecolor("white")
         ax[2 * ii + 0].set_aspect(1)
-        ax[2 * ii + 0].set_xlim(max(-radius,np.min(xs)), min(radius,np.max(xs)))
-        ax[2 * ii + 0].set_ylim(max(-radius,np.min(ys)), min(radius,np.max(ys)))
+        ax[2 * ii + 0].set_xlim(max(-radius, np.min(xs)), min(radius, np.max(xs)))
+        ax[2 * ii + 0].set_ylim(max(-radius, np.min(ys)), min(radius, np.max(ys)))
         if text is not None:
             ax[2 * ii + 0].set_title(f"{text[ii]}", fontsize=2 * fnt_size)
         else:
