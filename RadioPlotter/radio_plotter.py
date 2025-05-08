@@ -96,7 +96,8 @@ def plot_pulses(pulses):
     plt.show()
 
 
-def plot_interpolated_footprint(positions, energy_fluences, interp):
+def plot_interpolated_footprint(positions, energy_fluences, interpolator=intp.RBFInterpolator,
+                                mark_antennas=None, text=None, radius=np.inf):
     """
 
     Plot the interpolated footprint.
@@ -107,91 +108,109 @@ def plot_interpolated_footprint(positions, energy_fluences, interp):
         Antenna positions
     energy_fluences: np.array
         Energy fluence for each antenna
-    interp: Bool
-        interpolate the intermediate points.
+    interpolator: scipy interpolator class
+        interpolator for the intermediate points
+    mark_antenna: list
+        index of antenna to highlight
 
     Returns
     -------
     None
     """
-    if len(energy_fluences.shape) == 1:
-        energy_fluences = np.array([energy_fluences]).T
-    x_pos, y_pos = positions[:, 0], positions[:, 1]
-    for i in range(energy_fluences.shape[1]):
-        energy_flu = energy_fluences[:, i]
+    x_pos = positions[:, 0]
+    y_pos = positions[:, 1]
+    if energy_fluences.ndim == 1:
+        energy_fluences = energy_fluences.reshape((*energy_fluences.shape, 1))
+    print(energy_fluences.shape)
+    nplots = energy_fluences.shape[-1]
+    fig, ax = plt.subplots(
+        1,
+        nplots*2,
+        gridspec_kw={"width_ratios": [40, 1]*nplots},
+        figsize=[int(2.66 * fnt_size), fnt_size],
+    )
+    for ii in range(energy_fluences.shape[-1]):
+        energy_flu = energy_fluences[:, ii]
+        print(energy_flu.shape)
         if np.min(energy_flu) == np.max(energy_flu):
             print(np.min(energy_flu))
             continue
-        fig, ax = plt.subplots(
-            1,
-            2,
-            figsize=(int(1.333 * fnt_size), fnt_size),
-            gridspec_kw={"width_ratios": [30, 1]},
-        )
-        if interp:
-            # construct the interpolation function
-            interp_func = intp.Rbf(
-                x_pos,
-                y_pos,
-                energy_flu,
-                smooth=0,
-                function="quintic",
-            )
-            # define positions where to interpolate
-            xs = np.linspace(np.min(x_pos), np.max(x_pos), 100)
-            ys = np.linspace(np.min(y_pos), np.max(y_pos), 100)
-            xx, yy = np.meshgrid(xs, ys)
-            # points within a circle
-            in_star = xx**2 + yy**2 <= np.amax(x_pos**2 + y_pos**2)
-            # interpolated values! but only in the star. outsite set to nan
-            fp_interp = np.where(in_star, interp_func(xx, yy), np.nan)
-            cmap = "inferno"  # set the colormap
-            # with vmin/vmax control that both
-            # pcolormesh and scatter use the same colorscale
-            pcm = ax[0].pcolormesh(
-                xx,
-                yy,
-                fp_interp,
-                vmin=np.percentile(energy_flu, 0),
-                vmax=np.percentile(energy_flu, 100),
-                cmap=cmap,
-                shading="gouraud",
-            )  # use shading="gouraud" to make it smoother
-            _ = ax[0].scatter(
-                x_pos,
-                y_pos,
-                edgecolor="w",
-                facecolor="none",
-                s=5.0,
-                lw=1.0,
-            )
-            cbi = fig.colorbar(pcm, pad=0.02, cax=ax[1])
-            cbi.set_label(r"Energy Fluence $f$ / eV$\,$m$^{-2}$", fontsize=20)
-        else:
-            _ = ax[0].scatter(
-                x_pos,
-                y_pos,
-                c=energy_flu,
-                edgecolor="w",
-                facecolor="none",
-                s=fnt_size / 5,
-                lw=fnt_size / 10,
-            )
 
-        ax[0].set_ylabel("y / m", fontsize=fnt_size)
-        ax[0].set_xlabel("x / m", fontsize=fnt_size)
-        ax[0].set_facecolor("black")
-        ax[0].set_aspect(1)
-        ax[0].set_xlim(np.min(x_pos), np.max(x_pos))
-        ax[0].set_ylim(np.min(y_pos), np.max(y_pos))
-        fig.suptitle(f"CORSIKA 7 - all {i}")
-        print("vmin = ", np.amin(energy_flu))
-        print("vmax = ", np.amax(energy_flu))
-        plt.xticks(fontsize=fnt_size)
-        plt.yticks(fontsize=fnt_size)
-        plt.tight_layout()
-        plt.savefig("fluence_maps.pdf", format="pdf")
-        plt.show()
+        # define positions where to interpolate
+        xs = np.linspace(np.nanmin(x_pos), np.nanmax(x_pos), 100)
+        ys = np.linspace(np.nanmin(y_pos), np.nanmax(y_pos), 100)
+        xx, yy = np.meshgrid(xs, ys)
+        # points within a circle
+        in_star = xx**2 + yy**2 <= np.nanmax(x_pos**2 + y_pos**2)
+        # interpolated values! but only in the star. outsite set to nan
+        if interpolator is not None:
+            interp_func = interpolator(
+                list(zip(x_pos, y_pos)), energy_flu, kernel="linear"
+            )
+            fp_interp = np.where(
+                in_star.flatten(),
+                interp_func(np.array([xx, yy]).reshape(2, -1).T),
+                np.nan,
+            ).reshape(100, 100)
+        else:
+            fp_interp = energy_flu.reshape((100, 100))
+            fp_interp = np.where(in_star, fp_interp, np.nan)
+
+        cmap = "inferno"  # set the colormap
+        # with vmin/vmax control that both
+        # pcolormesh and scatter use the same colorscale
+        pcm = ax[2 * ii + 0].pcolormesh(
+            xx,
+            yy,
+            fp_interp,
+            vmin=np.percentile(energy_flu, 1),
+            vmax=np.percentile(energy_flu, 99),
+            cmap=cmap,
+            shading="gouraud",
+        )  # use shading="gouraud" to make it smoother
+        _ = ax[2 * ii + 0].scatter(
+            x_pos,
+            y_pos,
+            edgecolor="w",
+            facecolor="none",
+            s=fnt_size/2,
+            lw=fnt_size/10,
+        )
+        cbi = fig.colorbar(pcm, pad=0.02, cax=ax[2 * ii + 1])
+        cbi.set_label(r"$Time (ns)$", fontsize=2 * fnt_size)
+
+        ax[2 * ii + 0].set_ylabel("vvxxB (m)", fontsize=2 * fnt_size)
+        ax[2 * ii + 0].set_xlabel("vxB (m)", fontsize=2 * fnt_size)
+        ax[2 * ii + 0].set_facecolor("white")
+        ax[2 * ii + 0].set_aspect(1)
+        ax[2 * ii + 0].set_xlim(max(-radius,np.min(xs)), min(radius,np.max(xs)))
+        ax[2 * ii + 0].set_ylim(max(-radius,np.min(ys)), min(radius,np.max(ys)))
+        if text is not None:
+            ax[2 * ii + 0].set_title(f"{text[ii]}", fontsize=2 * fnt_size)
+        else:
+            ax[2 * ii + 0].set_title(f"{ii}", fontsize=2 * fnt_size)
+        # print("vmin = ", np.amin(energy_flu))
+        # print("vmax = ", np.amax(energy_flu))
+        ax[2 * ii + 0].tick_params(labelsize=2 * fnt_size)
+        ax[2 * ii + 1].tick_params(labelsize=2 * fnt_size)
+    if mark_antennas is not None:
+        _ = ax[2 * ii + 0].scatter(
+            x_pos[mark_antennas],
+            y_pos[mark_antennas],
+            edgecolor="r",
+            facecolor="none",
+            s=500.0,
+            lw=5.0,
+        )
+        for i in mark_antennas:
+            _ = ax[2 * ii + 0].annotate(
+                str(i),
+                (x_pos[i] + 10, y_pos[i] + 10),
+                color="green",
+                size="large",
+            )
+    plt.tight_layout()
+    plt.show()
 
 
 def plot_fluence_maps(
