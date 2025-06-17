@@ -186,7 +186,7 @@ def plot_interpolated_footprint(
             lw=fnt_size / 10,
         )
         cbi = fig.colorbar(pcm, pad=0.02, cax=ax[2 * ii + 1])
-        cbi.set_label(r"$Time (ns)$", fontsize=2 * fnt_size)
+        cbi.set_label(r"$Energy Fluence (eV/m^2)$", fontsize=2 * fnt_size)
 
         ax[2 * ii + 0].set_ylabel("vvxxB (m)", fontsize=2 * fnt_size)
         ax[2 * ii + 0].set_xlabel("vxB (m)", fontsize=2 * fnt_size)
